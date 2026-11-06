@@ -6,6 +6,8 @@ extern "C" {
 
 #include <SDL3/SDL_audio.h>
 
+namespace rysual
+{
 
 inline AVSampleFormat toAVSampleFormat(SDL_AudioFormat format) {
     switch (format) {
@@ -27,4 +29,9 @@ inline SDL_AudioFormat toSdlAudioFormat(AVSampleFormat format) {
     };
 }
 
+inline float scaleFactor(float from_lo, float from_hi, float to_lo, float to_hi) {
+    return (to_hi - to_lo) / (from_hi - from_lo);
+}
+
+} // namespace rysual
 

@@ -3,6 +3,7 @@
 #include "draw/rgba.hpp"
 #include "player/AudioPlayer.hpp"
 #include "draw/draw.hpp"
+#include "utils.hpp"
 
 #include <SDL3/SDL.h>
 
@@ -14,6 +15,7 @@
 #include <exception>
 #include <filesystem>
 #include <iostream>
+#include <string>
 
 namespace fs = std::filesystem;
 
@@ -56,8 +58,17 @@ try
 
     bool running = true;
 
+    int64_t preTick = SDL_GetTicks();
+    uint64_t frameCount = 0;
     // main loop
     while (running) {
+        const int64_t curTick = SDL_GetTicks();
+        const int64_t frameTick = curTick - preTick;
+        if (frameCount % 25 == 0) {
+            SDL_Log("main()::LOOP | frame tick: %2ld ms | frame %4lu", frameTick, frameCount);
+        }
+        ++frameCount;
+
         SDL_Event event;
         while (SDL_PollEvent(&event)) {
             switch (event.type) {
@@ -82,16 +93,23 @@ try
             break;
         }
 
+        preTick = curTick;
+
         SDL_GetWindowSize(window.get(), &winWidth, &winHeight);
         SDL_SetRenderLogicalPresentation(renderer.get(), winWidth, winHeight, SDL_LOGICAL_PRESENTATION_LETTERBOX);
         SDL_SetRenderDrawColor(renderer.get(), 0x66, 0xcc, 0xff, 0xFF);
         SDL_RenderClear(renderer.get());
 
-        SDL_FRect rect = {.x=25.f, .y=static_cast<float>(winHeight)/2,
-                          .w=50.f, .h=300.f};
-        rysual::Irgba color = 0xFF0000FF;
+        const float kRectCount = 25.f;
+        const float kRectWidth = static_cast<float>(winWidth) / kRectCount;
+        const float kRectHeight = 300.f;
+        SDL_FRect rect = {.x=kRectWidth/2.f, .y=static_cast<float>(winHeight)/2,
+                          .w=kRectWidth, .h=kRectHeight};
+        rysual::Irgba color = 0xFFFFFFFF;
 
         for (int i = 0; i < static_cast<int>((winWidth + rect.w) / rect.w); ++i) {
+            float curHeight = kRectHeight * (std::sin(rect.x + static_cast<float>(curTick)/1'000.f) + 1.f) / 2.f;
+            rect.h = curHeight * rysual::scaleFactor(0, kRectHeight, 10.f, 500.f) + 10.f;
             rysual::drawRectCR(renderer.get(), rect,
                 static_cast<uint32_t>((std::sin<uint32_t>(rect.x) + 1.f) / 2.f * color));
             rect.x += rect.w;
