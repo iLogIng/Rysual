@@ -15,9 +15,10 @@
 #include <exception>
 #include <filesystem>
 #include <iostream>
-#include <string>
 
 namespace fs = std::filesystem;
+
+constexpr rysual::Irgba kBackground = 0x212425FF;
 
 int main(int argc, char *argv[])
 try
@@ -97,7 +98,7 @@ try
 
         SDL_GetWindowSize(window.get(), &winWidth, &winHeight);
         SDL_SetRenderLogicalPresentation(renderer.get(), winWidth, winHeight, SDL_LOGICAL_PRESENTATION_LETTERBOX);
-        SDL_SetRenderDrawColor(renderer.get(), 0x66, 0xcc, 0xff, 0xFF);
+        SDL_SetRenderDrawColor(renderer.get(), kBackground.r, kBackground.g, kBackground.b, kBackground.a);
         SDL_RenderClear(renderer.get());
 
         const float kRectCount = 25.f;
@@ -105,13 +106,13 @@ try
         const float kRectHeight = 300.f;
         SDL_FRect rect = {.x=kRectWidth/2.f, .y=static_cast<float>(winHeight)/2,
                           .w=kRectWidth, .h=kRectHeight};
-        rysual::Irgba color = 0xFFFFFFFF;
+        rysual::Irgba kColor = 0xFF'FF'FF'FF;
 
         for (int i = 0; i < static_cast<int>((winWidth + rect.w) / rect.w); ++i) {
             float curHeight = kRectHeight * (std::sin(rect.x + static_cast<float>(curTick)/1'000.f) + 1.f) / 2.f;
             rect.h = curHeight * rysual::scaleFactor(0, kRectHeight, 10.f, 500.f) + 10.f;
-            rysual::drawRectCR(renderer.get(), rect,
-                static_cast<uint32_t>((std::sin<uint32_t>(rect.x) + 1.f) / 2.f * color));
+            rysual::Irgba curColor = static_cast<uint32_t>((std::sin<uint32_t>(rect.x) + 1.f) / 2.f * kColor);
+            rysual::drawRectCR(renderer.get(), rect, curColor);
             rect.x += rect.w;
         }
 
