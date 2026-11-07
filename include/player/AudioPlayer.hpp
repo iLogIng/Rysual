@@ -6,10 +6,13 @@
 #include "media/PcmChunk.hpp"
 #include "output/AudioOutput.hpp"
 #include "player/AudioPipeline.hpp"
+#include "sync/AudioClock.hpp"
 
 #include <SDL3/SDL_audio.h>
 
+#include <cstdint>
 #include <filesystem>
+#include <vector>
 
 namespace rysual
 {
@@ -62,9 +65,11 @@ public:
     // 状态查询
     int64_t positionUs() const;
 
-    int64_t bufferedDurationUs() const { return m_output.deviceBufferDurationUs(); }
+    int64_t bufferedDurationUs() const;
 
-    int64_t durationUs() const { return positionUs() + m_output.deviceBufferDurationUs(); }
+    int64_t durationUs() const;
+
+    const AudioClock& clock() const { return m_clock; }
 
     bool seek(int64_t position_us);
 
@@ -90,6 +95,7 @@ private:
 
     Demuxer m_demuxer;
     AudioOutput m_output;
+    AudioClock m_clock;
     AudioPipeline m_pipeline;
 
     AVPacketPtr m_avpacket;

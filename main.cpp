@@ -20,8 +20,7 @@ namespace fs = std::filesystem;
 
 constexpr rysual::Irgba kBackground = 0x212425FF;
 
-int main(int argc, char *argv[])
-try
+int main(int argc, char *argv[]) try
 {
     if (argc < 2) {
         rysual::logging::FAILED_LOG("main()", "invalid argument");
@@ -81,6 +80,10 @@ try
                     running = false;
                 }
                 break;
+            case SDL_EVENT_WINDOW_PIXEL_SIZE_CHANGED:
+                SDL_GetWindowSize(window.get(), &winWidth, &winHeight);
+                SDL_SetRenderLogicalPresentation(renderer.get(), winWidth, winHeight, SDL_LOGICAL_PRESENTATION_LETTERBOX);
+                break;
             default:
                 break;
             }
@@ -96,8 +99,6 @@ try
 
         preTick = curTick;
 
-        SDL_GetWindowSize(window.get(), &winWidth, &winHeight);
-        SDL_SetRenderLogicalPresentation(renderer.get(), winWidth, winHeight, SDL_LOGICAL_PRESENTATION_LETTERBOX);
         SDL_SetRenderDrawColor(renderer.get(), kBackground.r, kBackground.g, kBackground.b, kBackground.a);
         SDL_RenderClear(renderer.get());
 
