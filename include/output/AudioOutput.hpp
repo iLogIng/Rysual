@@ -91,6 +91,12 @@ public:
         if (m_device != 0 &&
             SDL_GetAudioDeviceFormat(m_device, &device_spec, &device_buffer_frames)) {
             m_device_buffer_frames = device_buffer_frames;
+            if (device_spec.freq > 0 && device_buffer_frames > 0) {
+                // 设备缓冲帧数位于设备采样率，必须用设备侧 freq 换算时长
+                m_device_buffer_duration_us =
+                    static_cast<int64_t>(device_buffer_frames)
+                    * 1'000'000 / device_spec.freq;
+            }
         }
     }
 
@@ -103,6 +109,7 @@ public:
         m_frames_bytes = 0;
         m_bytes_per_second = 0;
         m_device_buffer_frames = 0;
+        m_device_buffer_duration_us = 0;
         m_speed = 1.0f;
     }
 
@@ -259,10 +266,7 @@ public:
 
     int64_t deviceBufferDurationUs() const noexcept
     {
-        if (m_spec.freq <= 0) {
-            return 0;
-        }
-        return static_cast<int64_t>(m_device_buffer_frames) * 1'000'000 / m_spec.freq;
+        return m_device_buffer_duration_us;
     }
 
     // 队列 + 设备缓冲，失败时返回 -1
@@ -293,6 +297,7 @@ private:
     size_t m_frames_bytes = 0;
     size_t m_bytes_per_second = 0;
     int m_device_buffer_frames = 0;
+    int64_t m_device_buffer_duration_us = 0;
     float m_speed = 1.0f;
 
 }; // class AudioOutput
