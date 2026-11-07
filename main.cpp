@@ -1,24 +1,18 @@
 #include "Log.hpp"
 #include "SdlRAII.hpp"
-#include "visual/rgba.hpp"
-#include "visual/sdldraw.hpp"
 #include "player/AudioPlayer.hpp"
-#include "utils.hpp"
+#include "visual/Visualize.hpp"
 
 #include <SDL3/SDL.h>
 
 #include <SDL3/SDL_events.h>
 #include <SDL3/SDL_keycode.h>
-#include <SDL3/SDL_timer.h>
 #include <SDL3/SDL_render.h>
+#include <SDL3/SDL_timer.h>
 
 #include <exception>
 #include <filesystem>
 #include <iostream>
-
-namespace fs = std::filesystem;
-
-constexpr rysual::Irgba kBackground = 0x212425FF;
 
 int main(int argc, char *argv[]) try
 {
@@ -29,7 +23,7 @@ int main(int argc, char *argv[]) try
     }
     rysual::logging::INFO_LOG("main()", "rysual");
 
-    fs::path filepath(argv[1]);
+    const std::filesystem::path filepath(argv[1]);
 
     int winWidth = 1080;
     int winHeight = 720;
@@ -56,23 +50,15 @@ int main(int argc, char *argv[]) try
     player.open(filepath);
     player.play();
 
+    // Visualize
+    rysual::Visualize visualize;
+    if (!visualize.configure(player.tap().sampleRate())) {
+        rysual::logging::FAILED_LOG("main()", "Visualize::configure()");
+        return 1;
+    }
+
     bool running = true;
-
-    float rmsDisplay = 0.f;
-
-    int64_t preTick = SDL_GetTicks();
-    uint64_t frameCount = 0;
-    // main loop
     while (running) {
-        const int64_t curTick = SDL_GetTicks();
-        const int64_t frameTick = curTick - preTick;
-        preTick = curTick;
-
-        if (frameCount % 25 == 0) {
-            SDL_Log("main()::LOOP | frame tick: %2ld ms | frame %4lu", frameTick, frameCount);
-        }
-        ++frameCount;
-
         SDL_Event event;
         while (SDL_PollEvent(&event)) {
             switch (event.type) {
@@ -80,8 +66,21 @@ int main(int argc, char *argv[]) try
                 running = false;
                 break;
             case SDL_EVENT_KEY_DOWN:
-                if (event.key.key == SDLK_ESCAPE) {
+                switch (event.key.key) {
+                case SDLK_ESCAPE:
                     running = false;
+                    break;
+                case SDLK_1:
+                    visualize.setMode(rysual::Visualize::Mode::Spectrum);
+                    break;
+                case SDLK_2:
+                    visualize.setMode(rysual::Visualize::Mode::Waveform);
+                    break;
+                case SDLK_3:
+                    visualize.setMode(rysual::Visualize::Mode::Simulated);
+                    break;
+                default:
+                    break;
                 }
                 break;
             case SDL_EVENT_WINDOW_PIXEL_SIZE_CHANGED:
@@ -93,7 +92,7 @@ int main(int argc, char *argv[]) try
             }
         }
 
-        auto result = player.step();
+        const auto result = player.step();
         if (result == rysual::AudioPlayer::StepState::Error) {
             return 1;
         }
@@ -101,36 +100,18 @@ int main(int argc, char *argv[]) try
             break;
         }
 
-        SDL_SetRenderDrawColor(renderer.get(), kBackground.r, kBackground.g, kBackground.b, kBackground.a);
-        SDL_RenderClear(renderer.get());
+        visualize.update(player.tap(), player.positionUs());
 
-// 音频 RMS
-#if 1
-        // 当前的播放位置
-        const int64_t pos_us = player.positionUs();
-        constexpr size_t kWindowSamples = 2048;
-        std::vector<float> samples;
-        if (!player.tap().valid() ||
-            !player.tap().readWindow(pos_us, kWindowSamples, samples))
-        {
-            samples.assign(kWindowSamples, 0.f);
-        }
-        const float rms = rysual::computeRMS(samples);
-        rmsDisplay = std::max(rms, rmsDisplay * 0.90f);
-        rysual::renderWaveform_v2(renderer.get(), samples, rmsDisplay, winWidth, winHeight);
-#endif
-
-// 正弦波模拟输出
-#if 0
-        const float kRectCount = 25.f;
-        const float kRectHeight = 300.f;
-        rysual::Irgba kColor = 0xFF'FF'FF'FF;
-        rysual::drawSinRectSimulat(renderer.get(), curTick, winWidth, winHeight, kRectCount, kRectHeight, kColor, 0.f, 500.f);
-#endif
+        const SDL_FRect area = {
+            .x = 0.f,
+            .y = 0.f,
+            .w = static_cast<float>(winWidth),
+            .h = static_cast<float>(winHeight),
+        };
+        visualize.render(renderer.get(), area, 0x212425FF);
 
         SDL_RenderPresent(renderer.get());
-        SDL_Delay(1'000 / 60);
-        SDL_SetRenderDrawColor(renderer.get(), 0x00, 0x00, 0x00, 0x00);
+        SDL_Delay(1000 / 60);
     }
 
     return 0;
