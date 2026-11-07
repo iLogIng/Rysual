@@ -21,6 +21,11 @@ void AudioPlayer::open(const std::filesystem::path& filepath, SDL_AudioDeviceID 
 
         m_clock.reset(m_output.spec().freq, 0);
 
+        const SDL_AudioSpec& spec = m_output.spec();
+        if (!m_tap.configure(spec.freq, spec.channels, spec.format, static_cast<size_t>(spec.freq) * 2)) {
+            logging::ERROR_LOG("AudioPlayer::open()", "AudioTap::configure()");
+        }
+
         m_avpacket = makeAVPacket();
         m_chunks.reserve(8);
         // 1s queue buffer
@@ -124,6 +129,9 @@ bool AudioPlayer::queueChunks() {
             m_clock.advance(chunk.nb_samples, latency);
         }
 
+        // 可视化数据缺失不应中断播放
+        m_tap.push(chunk);
+
         if (!m_started) {
             if (!m_output.resume()) {
                 return false;
@@ -175,6 +183,7 @@ int64_t AudioPlayer::durationUs() const {
 
 void AudioPlayer::close() {
     m_clock.reset(0, 0);
+    m_tap.clear();
     m_pipeline.close();
     m_output.close();
     m_demuxer.close();

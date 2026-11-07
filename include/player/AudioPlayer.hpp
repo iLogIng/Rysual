@@ -5,6 +5,7 @@
 #include "media/Demuxer.hpp"
 #include "media/PcmChunk.hpp"
 #include "output/AudioOutput.hpp"
+#include "output/AudioTap.hpp"
 #include "player/AudioPipeline.hpp"
 #include "sync/AudioClock.hpp"
 
@@ -71,6 +72,8 @@ public:
 
     const AudioClock& clock() const { return m_clock; }
 
+    const AudioTap& tap() const { return m_tap; }
+
     bool seek(int64_t position_us);
 
     void close();
@@ -96,6 +99,7 @@ private:
     Demuxer m_demuxer;
     AudioOutput m_output;
     AudioClock m_clock;
+    AudioTap m_tap;
     AudioPipeline m_pipeline;
 
     AVPacketPtr m_avpacket;
