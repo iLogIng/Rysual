@@ -112,7 +112,7 @@ int main(int argc, char *argv[]) try
         for (int i = 0; i < static_cast<int>((winWidth + rect.w) / rect.w); ++i) {
             float curHeight = kRectHeight * (std::sin(rect.x + static_cast<float>(curTick)/1'000.f) + 1.f) / 2.f;
             rect.h = curHeight * rysual::scaleFactor(0, kRectHeight, 10.f, 500.f) + 10.f;
-            rysual::Irgba curColor = static_cast<uint32_t>((std::sin<uint32_t>(rect.x) + 1.f) / 2.f * kColor);
+            rysual::Irgba curColor = static_cast<uint32_t>((std::sin<uint32_t>(rect.x) + 1. ) / 2.f * kColor);
             rysual::drawRectCR(renderer.get(), rect, curColor);
             rect.x += rect.w;
         }

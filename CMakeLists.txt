@@ -31,6 +31,7 @@ include(CTest)
 add_library(rysual_core STATIC
     src/Log.cpp
     src/media/Resampler.cpp
+    src/output/AudioTap.cpp
     src/play/AudioPlayer.cpp
     src/play/AudioPipeline.cpp
 )
