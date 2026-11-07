@@ -1,12 +1,17 @@
 #include "media/RingBuffer.hpp"
 #include "output/AudioTap.hpp"
+#include "utils.hpp"
+#include "visual/FFT.hpp"
 
 #include <SDL3/SDL_audio.h>
 
 #include <cmath>
+#include <complex>
 #include <cstdint>
 #include <cstdio>
 #include <cstring>
+#include <numbers>
+#include <stdexcept>
 #include <vector>
 
 namespace
@@ -115,6 +120,92 @@ void testAudioTapS16()
           "AudioTap rejects unsupported format");
 }
 
+void testFFT()
+{
+    rysual::FFT fft(8);
+    std::vector<float> impulse(8, 0.f);
+    impulse[0] = 1.f;
+
+    std::vector<std::complex<float>> output;
+    fft.forward(impulse.data(), output);
+    check(output.size() == 5, "FFT output size");
+
+    bool flat = true;
+    for (const auto& value : output) {
+        if (std::fabs(std::abs(value) - 1.f) > 1e-4f) {
+            flat = false;
+        }
+    }
+    check(flat, "FFT impulse has flat magnitude");
+
+    rysual::FFT fft64(64);
+    std::vector<float> sine(64);
+    for (size_t n = 0; n < sine.size(); ++n) {
+        sine[n] = std::sin(
+            2.f * std::numbers::pi_v<float> * 4.f
+            * static_cast<float>(n) / static_cast<float>(sine.size()));
+    }
+    fft64.forward(sine.data(), output);
+    check(output.size() == 33, "FFT sine output size");
+    check(std::abs(output[4]) > 30.f, "FFT sine peak at expected bin");
+    check(std::abs(output[3]) < 1.f, "FFT sine has low neighbor bin");
+
+    bool threw = false;
+    try {
+        rysual::FFT invalid(10);
+        (void)invalid;
+    } catch (const std::invalid_argument&) {
+        threw = true;
+    }
+    check(threw, "FFT rejects non power-of-two size");
+}
+
+void testFftBands()
+{
+    constexpr size_t kFftSize = 2048;
+    constexpr int kSampleRate = 44100;
+
+    const std::vector<float> hann = rysual::makeHannWindow(kFftSize);
+    const std::vector<rysual::FftBand> bands =
+        rysual::makeFftBands(kSampleRate, kFftSize, 48);
+    check(bands.size() == 48, "FFT band count");
+
+    rysual::FFT fft(kFftSize);
+    std::vector<float> sine(kFftSize);
+    for (size_t n = 0; n < sine.size(); ++n) {
+        sine[n] = std::sin(
+            2.f * std::numbers::pi_v<float> * 440.f
+            * static_cast<float>(n) / static_cast<float>(kSampleRate));
+    }
+
+    std::vector<float> windowed;
+    rysual::applyHann(sine, hann, windowed);
+
+    std::vector<std::complex<float>> spectrum;
+    fft.forward(windowed.data(), spectrum);
+
+    std::vector<float> levels(bands.size(), 0.f);
+    rysual::updateBandLevels(spectrum, bands, kFftSize, levels);
+
+    float max_level = 0.f;
+    for (float level : levels) {
+        max_level = std::max(max_level, level);
+    }
+    check(max_level > 0.2f, "FFT bands detect 440 Hz tone");
+
+    std::vector<float> silence(kFftSize, 0.f);
+    rysual::applyHann(silence, hann, windowed);
+    fft.forward(windowed.data(), spectrum);
+    std::fill(levels.begin(), levels.end(), 0.f);
+    rysual::updateBandLevels(spectrum, bands, kFftSize, levels);
+
+    float silence_max = 0.f;
+    for (float level : levels) {
+        silence_max = std::max(silence_max, level);
+    }
+    check(silence_max < 0.01f, "FFT bands stay silent on silence");
+}
+
 } // namespace
 
 int main()
@@ -122,6 +213,8 @@ int main()
     testRingBuffer();
     testAudioTapF32();
     testAudioTapS16();
+    testFFT();
+    testFftBands();
 
     std::printf("failures=%d\n", g_failures);
     return g_failures ? 1 : 0;

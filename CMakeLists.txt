@@ -34,6 +34,8 @@ add_library(rysual_core STATIC
     src/output/AudioTap.cpp
     src/play/AudioPlayer.cpp
     src/play/AudioPipeline.cpp
+    src/visual/FFT.cpp
+    src/visual/Visualize.cpp
 )
 
 target_include_directories(rysual_core PUBLIC
