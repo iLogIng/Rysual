@@ -1,8 +1,8 @@
 #include "Log.hpp"
 #include "SdlRAII.hpp"
-#include "draw/rgba.hpp"
+#include "visual/rgba.hpp"
+#include "visual/sdldraw.hpp"
 #include "player/AudioPlayer.hpp"
-#include "draw/draw.hpp"
 #include "utils.hpp"
 
 #include <SDL3/SDL.h>
