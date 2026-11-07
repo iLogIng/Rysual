@@ -58,12 +58,16 @@ int main(int argc, char *argv[]) try
 
     bool running = true;
 
+    float rmsDisplay = 0.f;
+
     int64_t preTick = SDL_GetTicks();
     uint64_t frameCount = 0;
     // main loop
     while (running) {
         const int64_t curTick = SDL_GetTicks();
         const int64_t frameTick = curTick - preTick;
+        preTick = curTick;
+
         if (frameCount % 25 == 0) {
             SDL_Log("main()::LOOP | frame tick: %2ld ms | frame %4lu", frameTick, frameCount);
         }
@@ -97,16 +101,32 @@ int main(int argc, char *argv[]) try
             break;
         }
 
-        preTick = curTick;
-
         SDL_SetRenderDrawColor(renderer.get(), kBackground.r, kBackground.g, kBackground.b, kBackground.a);
         SDL_RenderClear(renderer.get());
 
+// 音频 RMS
+#if 1
+        // 当前的播放位置
+        const int64_t pos_us = player.positionUs();
+        constexpr size_t kWindowSamples = 2048;
+        std::vector<float> samples;
+        if (!player.tap().valid() ||
+            !player.tap().readWindow(pos_us, kWindowSamples, samples))
+        {
+            samples.assign(kWindowSamples, 0.f);
+        }
+        const float rms = rysual::computeRMS(samples);
+        rmsDisplay = std::max(rms, rmsDisplay * 0.90f);
+        rysual::renderWaveform_v2(renderer.get(), samples, rmsDisplay, winWidth, winHeight);
+#endif
+
+// 正弦波模拟输出
+#if 0
         const float kRectCount = 25.f;
         const float kRectHeight = 300.f;
         rysual::Irgba kColor = 0xFF'FF'FF'FF;
-
         rysual::drawSinRectSimulat(renderer.get(), curTick, winWidth, winHeight, kRectCount, kRectHeight, kColor, 0.f, 500.f);
+#endif
 
         SDL_RenderPresent(renderer.get());
         SDL_Delay(1'000 / 60);

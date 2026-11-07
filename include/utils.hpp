@@ -1,9 +1,12 @@
 #pragma once
 
+#include <algorithm>
+#include <cmath>
 extern "C" {
 #include <libavutil/samplefmt.h>
 }
 
+#include <vector>
 #include <SDL3/SDL_audio.h>
 
 namespace rysual
@@ -32,6 +35,19 @@ inline SDL_AudioFormat toSdlAudioFormat(AVSampleFormat format) {
 inline float scaleFactor(float from_lo, float from_hi, float to_lo, float to_hi) {
     return (to_hi - to_lo) / (from_hi - from_lo);
 }
+
+inline float computeRMS(const std::vector<float>& samples) {
+    if (samples.empty()) {
+        return 0.f;
+    }
+    double sum = 0.f;
+    for (const auto& s : samples) {
+        sum += static_cast<double>(s) * s;
+    }
+    const float rms = static_cast<float>(std::sqrt(sum / samples.size()));
+    return rms;
+}
+
 
 } // namespace rysual
 
