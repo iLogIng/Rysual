@@ -33,7 +33,7 @@ public:
         Simulated,
     };
 
-    explicit Visualize(size_t fft_size = 2048, size_t band_count = 48);
+    explicit Visualize(size_t fft_size = 2048, size_t band_count = 64);
     ~Visualize() = default;
 
     Visualize(const Visualize&) = delete;
@@ -43,6 +43,13 @@ public:
 
     void setMode(Mode mode) noexcept { m_mode = mode; }
     Mode mode() const noexcept { return m_mode; }
+
+    void setFFTSize(size_t n) {
+        m_fft_size = n;
+        m_samples.reserve(n);
+        m_windowed.reserve(n);
+    }
+    void setBandCount(size_t n) { m_band_count = n; }
 
     bool valid() const noexcept { return m_valid; }
 

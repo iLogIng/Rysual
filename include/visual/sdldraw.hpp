@@ -74,25 +74,25 @@ inline void drawSpectrumBars(SDL_Renderer* renderer, const std::vector<float>& l
     }
 
     const float bar_width = area.w / static_cast<float>(levels.size());
+    float bar_offset_x = 0.5f * bar_width;
     for (size_t i = 0; i < levels.size(); ++i) {
         const float level = std::clamp(levels[i], 0.f, 1.f);
         const float bar_height = area.h * level;
 
         const SDL_FRect bar = {
-            .x = area.x + static_cast<float>(i) * bar_width,
+            .x = area.x + bar_offset_x,
             .y = area.h / 2.f,
             .w = bar_width * 0.8f,
             .h = bar_height,
         };
+        bar_offset_x += bar_width;
 
         float freq_ratio = static_cast<float>(i) / levels.size();
-        float h = 200.0f + 120.0f * freq_ratio; 
+        float h = 222.0f + 120.0f * freq_ratio; 
         float s = 1.0f - (level * 0.2f); 
         float l = 0.5f + (level * 0.3f); 
 
         Irgba color = Irgba::fromHSL(h, s, l);
-        drawRectCR(renderer, &bar, color);
-
         drawRectCR(renderer, &bar, color);
     }
 }
@@ -198,7 +198,7 @@ inline void renderWaveform_v2(SDL_Renderer* renderer, const std::vector<float>& 
     // 波形绘制 使用循环连接相邻的两个点
     for (size_t i = 0; i < points.size() - 1; ++i) {
         float x_ratio = static_cast<float>(i) / points.size();
-        float hue = 180.0f + 120.0f * x_ratio;
+        float hue = 187.0f + 120.0f * x_ratio;
         float lightness = 0.4f + std::min(rms * 2.0f, 0.4f); 
         Irgba color = Irgba::fromHSL(hue, 1.0f, lightness);
         SDL_SetRenderDrawColor(renderer, color.r, color.g, color.b, color.a);
