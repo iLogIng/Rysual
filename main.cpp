@@ -103,22 +103,13 @@ int main(int argc, char *argv[]) try
         SDL_RenderClear(renderer.get());
 
         const float kRectCount = 25.f;
-        const float kRectWidth = static_cast<float>(winWidth) / kRectCount;
         const float kRectHeight = 300.f;
-        SDL_FRect rect = {.x=kRectWidth/2.f, .y=static_cast<float>(winHeight)/2,
-                          .w=kRectWidth, .h=kRectHeight};
         rysual::Irgba kColor = 0xFF'FF'FF'FF;
 
-        for (int i = 0; i < static_cast<int>((winWidth + rect.w) / rect.w); ++i) {
-            float curHeight = kRectHeight * (std::sin(rect.x + static_cast<float>(curTick)/1'000.f) + 1.f) / 2.f;
-            rect.h = curHeight * rysual::scaleFactor(0, kRectHeight, 10.f, 500.f) + 10.f;
-            rysual::Irgba curColor = static_cast<uint32_t>((std::sin<uint32_t>(rect.x) + 1. ) / 2.f * kColor);
-            rysual::drawRectCR(renderer.get(), rect, curColor);
-            rect.x += rect.w;
-        }
+        rysual::drawSinRectSimulat(renderer.get(), curTick, winWidth, winHeight, kRectCount, kRectHeight, kColor, 0.f, 500.f);
 
         SDL_RenderPresent(renderer.get());
-        SDL_Delay(1000 / 60);
+        SDL_Delay(1'000 / 60);
         SDL_SetRenderDrawColor(renderer.get(), 0x00, 0x00, 0x00, 0x00);
     }
 
