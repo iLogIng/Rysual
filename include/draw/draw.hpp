@@ -18,6 +18,22 @@ inline void drawRectLT(SDL_Renderer *renderer, SDL_FRect rect, Irgba color, bool
     }
 }
 
+inline void drawRectLB(SDL_Renderer *renderer, SDL_FRect rect, Irgba color, bool filled = true) {
+    SDL_FRect rectangle = {
+        .x = rect.x,
+        .y = rect.y - rect.h,
+        .w = rect.w,
+        .h = rect.h,
+    };
+    SDL_SetRenderDrawColor(renderer, color.r, color.g, color.b, color.a);
+    if (filled) {
+        SDL_RenderFillRect(renderer, &rectangle);
+    }
+    else {
+        SDL_RenderRect(renderer, &rectangle);
+    }
+}
+
 inline void drawRectCR(SDL_Renderer* renderer, SDL_FRect rect, Irgba color, bool filled = true) {
     SDL_FRect rectangle = {
         .x = rect.x - rect.w / 2,
