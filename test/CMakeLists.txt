@@ -8,5 +8,5 @@ function(add_component_test name)
     set_tests_properties(${name} PROPERTIES TIMEOUT 30)
 endfunction()
 
-# add_component_test()
+add_component_test(AudioTest)
 
