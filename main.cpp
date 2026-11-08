@@ -24,8 +24,27 @@ int main(int argc, char *argv[]) try
 {
     std::vector<fs::path> playlist;
 
+    const auto is_audio_file = [](const fs::directory_entry& entry) {
+        if (!fs::is_regular_file(entry)) {
+            return false;
+        }
+        std::string ext = entry.path().extension().string();
+        std::transform(ext.begin(), ext.end(), ext.begin(),
+                [](unsigned char c) { return std::tolower(c); });
+        return ext == ".mp3" || ext == ".mp4" || 
+               ext == ".flac" || ext == ".wav";
+    };
+    const auto process_directory = [&is_audio_file, &playlist](auto&& iterator) {
+        for (const auto &entry : iterator) {
+            if (is_audio_file(entry)) {
+                playlist.emplace_back(entry.path());
+            }
+        }
+    };
+
     for (int i = 1; i < argc; ++i) {
         fs::path path(argv[i]);
+        bool need_recusive = false;
         if (!fs::exists(path)) {
             continue;
         }
@@ -33,21 +52,17 @@ int main(int argc, char *argv[]) try
             playlist.emplace_back(std::move(path));
             continue;
         }
+        if (::strcmp(argv[i], "-r")) {
+            need_recusive = true;
+            ++i;
+        }
         if (fs::is_directory(path)) {
             try {
-                for (const auto& entry : fs::directory_iterator(path)) {
-                    if (fs::is_regular_file(entry)) {
-                        std::string ext = entry.path().extension();
-                        std::transform(ext.begin(), ext.end(), ext.begin(),
-                                [](unsigned char c) { return std::tolower(c); });
-                        if (ext == ".mp3" ||
-                            ext == ".mp4" ||
-                            ext == ".flac" ||
-                            ext == ".wav")
-                        {
-                            playlist.emplace_back(entry.path());
-                        }
-                    }
+                if (need_recusive) {
+                    process_directory(fs::recursive_directory_iterator(path));
+                }
+                else {
+                    process_directory(fs::directory_iterator(path));
                 }
             } catch (const fs::filesystem_error& e) {
                 std::cerr << "failed: directory traveling, " << e.what() << "\n";
@@ -61,7 +76,7 @@ int main(int argc, char *argv[]) try
         std::cerr
             << "Usage: "
             << fs::path(argv[0]).filename().string()
-            << " <[file|directory]...>\n";
+            << " <file|[-r ]directory...>\n";
         return 1;
     }
     else {
@@ -123,10 +138,6 @@ int main(int argc, char *argv[]) try
         return true;
     };
 
-    if (!load_track(0)) {
-        return 1;
-    }
-
     const auto print_pos_log = [](int64_t position_us) -> void {
         const int64_t cur_us = position_us;
         const int64_t cur_ms = cur_us/1'000;
@@ -135,6 +146,11 @@ int main(int argc, char *argv[]) try
         const int64_t cur_h  = cur_m/60;
         ::fprintf(stderr, "[POS: %02ld:%02ld:%02ld.%03ld]\n", cur_h, cur_m % 60, cur_s % 60, cur_ms % 1'000);
     };
+
+    // 第一首
+    if (!load_track(playlist_idx)) {
+        return 1;
+    }
 
     bool running = true;
     while (running) {

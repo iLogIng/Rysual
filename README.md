@@ -14,6 +14,8 @@
 - 读取多媒体文件中的音频流
 - 解码音频流为 PCM 流
 - 将流中的 PCM 值可视化
+- 支持目录递归搜查
+- 循环播放
 
 ## START
 
@@ -22,13 +24,22 @@ mkdir build
 cd build
 cmake ..
 make
-./Rysual <file>
+./Rysual <file|[-r ]directory ...>
 ```
 
+***arg***
+- `-r`      递归检索紧跟其后的目录
+
 **KEY**
-- ***1*** Spectrum
-- ***2*** Waveform
-- ***3*** Sin Simulate
+- `Esc`     退出
+- `,/.`     进度 控制
+- `-/+`     音量 控制
+- `n/p`     切换 控制
+- `s/l`     速度 控制
+- ` `       暂停 控制
+- `1` Spectrum
+- `2` Waveform
+- `3` Sin Simulate
 
 ## TODO
 
@@ -40,7 +51,7 @@ make
     - 波形曲线
     - 柱形FFT波谱
 
-- [ ] 支持的操作 (暂延后)
+- [X] 支持的操作
     - `,/.`     进度 控制
     - `-/+`     音量 控制
     - `n/p`     切换 控制
