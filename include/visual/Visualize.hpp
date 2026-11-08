@@ -44,11 +44,6 @@ public:
     void setMode(Mode mode) noexcept { m_mode = mode; }
     Mode mode() const noexcept { return m_mode; }
 
-    void setFFTSize(size_t n) {
-        m_fft_size = n;
-        m_samples.reserve(n);
-        m_windowed.reserve(n);
-    }
     void setBandCount(size_t n) { m_band_count = n; }
 
     bool valid() const noexcept { return m_valid; }

@@ -8,12 +8,13 @@
 namespace rysual
 {
 
-FFT::FFT(size_t N) {
-    m_N = N;
-    if (N == 0 || (N & (N - 1)) != 0) {
-        throw std::invalid_argument("FFT size must be a power of 2");
-    }
-    m_log2N = static_cast<size_t>(std::log2(N));
+FFT::FFT(size_t N)
+    : m_N ((N == 0 || (N & (N - 1)) != 0)
+            ? throw std::invalid_argument("FFT size must be a power of 2")
+            : N)
+    , m_log2N(static_cast<size_t>(std::log2(N)))
+    , m_data(N)
+{
     initBitRev();
     initTwiddle();
 }
@@ -42,10 +43,10 @@ void FFT::initTwiddle() {
 }
 
 void FFT::forward(const float *input, std::vector<std::complex<float>>& output) const {
-    std::vector<std::complex<float>> data(m_N);
+    // std::vector<std::complex<float>> data(m_N);
 
     for (size_t i = 0; i < m_N; ++i) {
-        data[m_bit_rev[i]] = std::complex<float>(input[i], 0.f);
+        m_data[m_bit_rev[i]] = std::complex<float>(input[i], 0.f);
     }
 
     for (size_t stage = 1; stage <= m_log2N; ++stage) {
@@ -57,12 +58,12 @@ void FFT::forward(const float *input, std::vector<std::complex<float>>& output) 
             std::complex<float> w = m_twiddle[k * twiddle_step];
             
             for (size_t j = k; j < m_N; j += m) {
-                std::complex<float> t = w * data[j + m2];
-                std::complex<float> u = data[j];
+                std::complex<float> t = w * m_data[j + m2];
+                std::complex<float> u = m_data[j];
                 
                 // 蝶形运算核心
-                data[j] = u + t;
-                data[j + m2] = u - t;
+                m_data[j] = u + t;
+                m_data[j + m2] = u - t;
             }
         }
     }
@@ -70,7 +71,7 @@ void FFT::forward(const float *input, std::vector<std::complex<float>>& output) 
     // 因为输入是实数，输出频域是对称的，只需要前 N/2 + 1 个点
     output.resize(m_N / 2 + 1);
     for (size_t i = 0; i <= m_N / 2; ++i) {
-        output[i] = data[i];
+        output[i] = m_data[i];
     }
 }
 

@@ -1,6 +1,6 @@
 # Rysual
 
-> Rythm Visualizer
+> Rhythm Visualizer
 
 > 音乐节奏可视化器  
 > 仅支持音频流  

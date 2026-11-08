@@ -109,7 +109,14 @@ void Visualize::render(SDL_Renderer *renderer, const SDL_FRect& area, const Irgb
 
 void Visualize::renderSpectrum(SDL_Renderer *renderer, const SDL_FRect& area) const
 {
+    const SDL_Rect viewport = toRect(area);
+    if (viewport.w <= 0 || viewport.h <= 0) {
+        return;
+    }
+
+    SDL_SetRenderViewport(renderer, &viewport);
     drawSpectrumBars(renderer, m_levels, area);
+    SDL_SetRenderViewport(renderer, nullptr);
 }
 
 void Visualize::renderWaveform(SDL_Renderer *renderer, const SDL_FRect& area) const
@@ -120,7 +127,7 @@ void Visualize::renderWaveform(SDL_Renderer *renderer, const SDL_FRect& area) co
     }
 
     SDL_SetRenderViewport(renderer, &viewport);
-    renderWaveform_v2(renderer, m_samples, m_rms_display, area);
+    renderWaveform_Geometry(renderer, m_samples, m_rms_display, area);
     SDL_SetRenderViewport(renderer, nullptr);
 }
 
