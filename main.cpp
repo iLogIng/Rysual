@@ -10,10 +10,6 @@
 #include <SDL3/SDL_render.h>
 #include <SDL3/SDL_timer.h>
 
-#include <algorithm>
-#include <cctype>
-#include <cstdint>
-#include <cstdio>
 #include <exception>
 #include <filesystem>
 #include <iostream>
@@ -277,6 +273,8 @@ int main(int argc, char *argv[]) try
                     break;
                 case SDLK_SPACE:
                     player.togglePause();
+                    ::fprintf(stderr, "[Paused] ");
+                    print_pos_log(player.positionUs());
                     break;
                 case SDLK_N:
                     if (!load_relative(+1)) {
