@@ -8,6 +8,7 @@
 #include <SDL3/SDL_error.h>
 #include <SDL3/SDL_events.h>
 #include <SDL3/SDL_keycode.h>
+#include <SDL3/SDL_mouse.h>
 #include <SDL3/SDL_render.h>
 #include <SDL3/SDL_timer.h>
 
@@ -240,14 +241,20 @@ int main(int argc, char *argv[]) try
     };
     const auto toggleBorderlessFullscreen = [](SDL_Window* window, bool enter) -> void {
         if (enter) {
-            // 进入无边框全屏
+            // 进入无边框全屏 同时隐藏光标
             SDL_SetWindowFullscreenMode(window, NULL);
             if (!SDL_SetWindowFullscreen(window, true)) {
+                rysual::logging::ERROR_LOG("main()", SDL_GetError());
+            }
+            if (!SDL_HideCursor()) {
                 rysual::logging::ERROR_LOG("main()", SDL_GetError());
             }
         } else {
             // 退出全屏，回到窗口模式
             if (!SDL_SetWindowFullscreen(window, false)) {
+                rysual::logging::ERROR_LOG("main()", SDL_GetError());
+            }
+            if (!SDL_ShowCursor()) {
                 rysual::logging::ERROR_LOG("main()", SDL_GetError());
             }
         }
