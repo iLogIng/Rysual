@@ -64,6 +64,14 @@ void Visualize::update(const AudioTap& tap, int64_t position_us)
         m_samples.assign(m_fft_size, 0.f);
     }
 
+    // 音频增益作用在 SDL 输出端，AudioTap 保存的是增益前 PCM，
+    // 因此这里对显示数据应用同一增益。
+    if (m_gain != 1.f) {
+        for (float& sample : m_samples) {
+            sample *= m_gain;
+        }
+    }
+
     switch (m_mode) {
     case Mode::Spectrum:
         updateSpectrum();

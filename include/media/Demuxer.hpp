@@ -68,6 +68,34 @@ public:
         return av_read_frame(m_avfmt_ctx.get(), pkt);
     }
 
+    bool seek(int64_t position_us) {
+        if (!m_avfmt_ctx || m_audio_stream_idx < 0) {
+            return false;
+        }
+        if (position_us < 0) {
+            position_us = 0;
+        }
+        const int64_t duration = durationUs();
+        if (duration > 0 && position_us > duration) {
+            position_us = duration;
+        }
+
+        const AVStream *stream = audioStreamInfo();
+        const int64_t timestamp = av_rescale_q(position_us, AV_TIME_BASE_Q, stream->time_base);
+
+        if (avformat_seek_file(
+            m_avfmt_ctx.get(), m_audio_stream_idx,
+            std::numeric_limits<int64_t>::min(),
+            timestamp,
+            std::numeric_limits<int64_t>::max(),
+            0) < 0)
+        {
+            logging::FAILED_LOG("Demuxer::seek()", "avformat_seek_file");
+            return false;
+        }
+        return true;
+    }
+
     const AVStream *audioStreamInfo() const {
         if (!m_avfmt_ctx || m_audio_stream_idx < 0) {
             return nullptr;

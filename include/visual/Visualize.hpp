@@ -46,6 +46,10 @@ public:
 
     void setBandCount(size_t n) { m_band_count = n; }
 
+    // 显示增益 只影响可视化，不改变实际音量
+    void setGain(float gain) noexcept { m_gain = gain < 0.f ? 0.f : gain; }
+    float gain() const noexcept { return m_gain; }
+
     bool valid() const noexcept { return m_valid; }
 
     // 从 AudioTap 读取 position_us 对应的窗口，并更新当前模式的分析状态
@@ -74,6 +78,7 @@ private:
     std::vector<FftBand> m_bands;
     std::vector<float> m_levels;
     float m_rms_display = 0.f;
+    float m_gain = 1.f;
 
 }; // class Visualize
 

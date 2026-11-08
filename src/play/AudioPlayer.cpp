@@ -1,4 +1,5 @@
 #include "player/AudioPlayer.hpp"
+#include <libavcodec/packet.h>
 
 namespace rysual
 {
@@ -168,6 +169,16 @@ bool AudioPlayer::pause() {
     return true;
 }
 
+bool AudioPlayer::togglePause() {
+    if (m_state == State::Playing) {
+    return pause();
+    }
+    if (m_state == State::Paused || m_state == State::Ready) {
+    return play();
+    }
+    return false;
+}
+
 int64_t AudioPlayer::positionUs() const {
     return m_clock.positionUs();
 }
@@ -192,6 +203,66 @@ void AudioPlayer::close() {
     m_state = State::Closed;
     m_max_queued_bytes = 0;
     m_chunks.clear();
+}
+
+bool AudioPlayer::seek(int64_t position_us) {
+    if (m_state == State::Closed || m_state == State::Finished) {
+        return false;
+    }
+    if (position_us < 0) {
+        position_us = 0;
+    }
+    const int64_t duration = m_demuxer.durationUs();
+    const bool at_end = duration > 0 && position_us >= duration;
+    if (at_end) {
+        position_us = duration;
+    }
+    if (duration > 0 && position_us > duration) {
+        position_us = duration;
+    }
+    const bool was_playing = (m_state == State::Playing);
+
+    m_started = false;
+    if (!m_output.pause()) {
+        return false;
+    }
+    if (!m_output.clear()) {
+        return false;
+    }
+
+    // 到达结尾: 不进入正常 seek 流程，直接进入收尾状态
+    if (at_end) {
+        m_chunks.clear();
+        m_tap.clear();
+        av_packet_unref(m_avpacket.get());
+
+        m_clock.reset(m_output.spec().freq, duration);
+        m_clock.setPaused(false);
+
+        // 下一次 step() 会返回 Finished，主循环自动退出
+        m_state = State::Finished;
+        return true;
+    }
+
+    if (!m_demuxer.seek(position_us)) {
+        return false;
+    }
+    if (!m_pipeline.reset()) {
+        m_state = State::Error;
+        return false;
+    }
+
+    av_packet_unref(m_avpacket.get());
+    m_chunks.clear();
+    m_tap.clear();
+    m_clock.reset(m_output.spec().freq, position_us);
+    m_clock.setPaused(!was_playing);
+
+    if (m_state == State::Draining || m_state == State::Finished) {
+        m_state = was_playing ? State::Playing : State::Paused;
+    }
+
+    return true;
 }
 
 } // namespace rysual

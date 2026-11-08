@@ -10,20 +10,64 @@
 #include <SDL3/SDL_render.h>
 #include <SDL3/SDL_timer.h>
 
+#include <cstdio>
 #include <exception>
 #include <filesystem>
 #include <iostream>
 
+namespace fs = std::filesystem;
+
+constexpr float kGainStep = 0.0500f;
+constexpr int64_t kSeekStepUs = 5'000'000;
+
 int main(int argc, char *argv[]) try
 {
-    if (argc < 2) {
+    std::vector<fs::path> playlist;
+
+    for (int i = 1; i < argc; ++i) {
+        fs::path path(argv[i]);
+        if (!fs::exists(path)) {
+            continue;
+        }
+        if (fs::is_regular_file(path)) {
+            playlist.emplace_back(std::move(path));
+            continue;
+        }
+        if (fs::is_directory(path)) {
+            try {
+                for (const auto& entry : fs::directory_iterator(path)) {
+                    if (fs::is_regular_file(entry)) {
+                        std::string ext = entry.path().extension();
+                        std::transform(ext.begin(), ext.end(), ext.begin(),
+                                [](unsigned char c) { return std::tolower(c); });
+                        if (ext == ".mp3" ||
+                            ext == ".mp4" ||
+                            ext == ".flac" ||
+                            ext == ".wav")
+                        {
+                            playlist.emplace_back(entry.path());
+                        }
+                    }
+                }
+            } catch (const fs::filesystem_error& e) {
+                std::cerr << "failed: directory traveling, " << e.what() << "\n";
+            }
+            continue;
+        }
+    }
+
+    if (playlist.empty()) {
         rysual::logging::FAILED_LOG("main()", "invalid argument");
-        std::cerr << "Usage: " << argv[0] << " <file>\n";
+        std::cerr
+            << "Usage: "
+            << fs::path(argv[0]).filename().string()
+            << " <[file|directory]...>\n";
         return 1;
     }
+    else {
+        std::cerr << "Get " << playlist.size() << " Music\n";
+    }
     rysual::logging::INFO_LOG("main()", "rysual");
-
-    const std::filesystem::path filepath(argv[1]);
 
     int winWidth = 1080;
     int winHeight = 720;
@@ -47,15 +91,50 @@ int main(int argc, char *argv[]) try
 
     // Audio Player
     rysual::AudioPlayer player;
-    player.open(filepath);
-    player.play();
-
-    // Visualize
     rysual::Visualize visualize;
-    if (!visualize.configure(player.tap().sampleRate())) {
-        rysual::logging::FAILED_LOG("main()", "Visualize::configure()");
+    size_t playlist_idx = 0;
+
+    const auto print_song_info = [&playlist, &playlist_idx, &player]() -> void {
+        const int64_t cur_us = player.durationUs();
+        const int64_t cur_ms = cur_us/1'000;
+        const int64_t cur_s  = cur_ms/1'000;
+        const int64_t cur_m  = cur_s/60;
+        const int64_t cur_h  = cur_m/60;
+        std::string name = playlist[playlist_idx].filename().string();
+        ::fprintf(stderr,
+            "[%ld/%ld: %s | "
+            "%02ld:%02ld:%02ld.%03ld]\n",
+            playlist_idx + 1, playlist.size(), name.c_str(),
+            cur_h % 24, cur_m % 60, cur_s % 60, cur_ms % 1'000);
+    };
+
+    const auto load_track = [&](size_t index) -> bool {
+        player.close();
+        player.open(playlist.at(index));
+        player.play();
+
+        if (!visualize.configure(player.tap().sampleRate())) {
+            rysual::logging::FAILED_LOG("main()", "Visualize::configure()");
+            return false;
+        }
+
+        playlist_idx = index;
+        print_song_info();
+        return true;
+    };
+
+    if (!load_track(0)) {
         return 1;
     }
+
+    const auto print_pos_log = [](int64_t position_us) -> void {
+        const int64_t cur_us = position_us;
+        const int64_t cur_ms = cur_us/1'000;
+        const int64_t cur_s  = cur_ms/1'000;
+        const int64_t cur_m  = cur_s/60;
+        const int64_t cur_h  = cur_m/60;
+        ::fprintf(stderr, "[POS: %02ld:%02ld:%02ld.%03ld]\n", cur_h, cur_m % 60, cur_s % 60, cur_ms % 1'000);
+    };
 
     bool running = true;
     while (running) {
@@ -79,6 +158,37 @@ int main(int argc, char *argv[]) try
                 case SDLK_3:
                     visualize.setMode(rysual::Visualize::Mode::Simulated);
                     break;
+                case SDLK_SPACE:
+                    player.togglePause();
+                    break;
+                case SDLK_N:
+                    if (!load_track((playlist_idx + 1) % playlist.size())) {
+                        return 1;
+                    }
+                    break;
+                case SDLK_P:
+                    if (!load_track((playlist_idx + playlist.size() - 1) % playlist.size())) {
+                        return 1;
+                    }
+                    break;
+                case SDLK_MINUS: case SDLK_KP_MINUS:
+                    player.setGain(std::clamp(player.gain() - kGainStep, 0.f, 1.f));
+                    ::fprintf(stderr, "[GAIN: %d%%]\n", static_cast<int>(player.gain() * 100.f));
+                    break;
+                case SDLK_EQUALS: case SDLK_KP_PLUS:
+                    player.setGain(std::clamp(player.gain() + kGainStep, 0.f, 1.f));
+                    ::fprintf(stderr, "[GAIN: %d%%]\n", static_cast<int>(player.gain() * 100.f));
+                    break;
+                case SDLK_COMMA: case SDLK_LEFT: {
+                    player.seek(player.positionUs() - kSeekStepUs);
+                    print_pos_log(player.positionUs());
+                    break;
+                 }
+                case SDLK_PERIOD: case SDLK_RIGHT: {
+                    player.seek(player.positionUs() + kSeekStepUs);
+                    print_pos_log(player.positionUs());
+                    break;
+                }
                 default:
                     break;
                 }
@@ -97,9 +207,14 @@ int main(int argc, char *argv[]) try
             return 1;
         }
         if (result == rysual::AudioPlayer::StepState::Finished) {
-            break;
+            if (!load_track((playlist_idx + 1) % playlist.size())) {
+                return 1;
+            }
         }
 
+
+        const float gain = player.gain();
+        visualize.setGain(gain >= 0.f ? gain : 1.f);
         visualize.update(player.tap(), player.positionUs());
 
         const SDL_FRect area = {
