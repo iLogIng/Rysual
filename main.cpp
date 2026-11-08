@@ -5,11 +5,13 @@
 
 #include <SDL3/SDL.h>
 
+#include <SDL3/SDL_error.h>
 #include <SDL3/SDL_events.h>
 #include <SDL3/SDL_keycode.h>
 #include <SDL3/SDL_render.h>
 #include <SDL3/SDL_timer.h>
 
+#include <SDL3/SDL_video.h>
 #include <exception>
 #include <filesystem>
 #include <iostream>
@@ -236,6 +238,20 @@ int main(int argc, char *argv[]) try
         }
         return false;
     };
+    const auto toggleBorderlessFullscreen = [](SDL_Window* window, bool enter) -> void {
+        if (enter) {
+            // 进入无边框全屏
+            SDL_SetWindowFullscreenMode(window, NULL);
+            if (!SDL_SetWindowFullscreen(window, true)) {
+                rysual::logging::ERROR_LOG("main()", SDL_GetError());
+            }
+        } else {
+            // 退出全屏，回到窗口模式
+            if (!SDL_SetWindowFullscreen(window, false)) {
+                rysual::logging::ERROR_LOG("main()", SDL_GetError());
+            }
+        }
+    };
 
     // 初始加载：遇到坏文件时继续尝试下一首
     bool loaded = false;
@@ -250,6 +266,7 @@ int main(int argc, char *argv[]) try
     }
 
     bool running = true;
+    bool fullscreen = false;
     while (running) {
         SDL_Event event;
         while (SDL_PollEvent(&event)) {
@@ -261,6 +278,10 @@ int main(int argc, char *argv[]) try
                 switch (event.key.key) {
                 case SDLK_ESCAPE:
                     running = false;
+                    break;
+                case SDLK_F11:
+                    fullscreen = !fullscreen;
+                    toggleBorderlessFullscreen(window.get(), fullscreen);
                     break;
                 case SDLK_1:
                     visualize.setMode(rysual::Visualize::Mode::Spectrum);
