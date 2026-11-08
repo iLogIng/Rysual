@@ -25,6 +25,11 @@ make
 ./Rysual <file>
 ```
 
+**KEY**
+- ***1*** Spectrum
+- ***2*** Waveform
+- ***3*** Sin Simulate
+
 ## TODO
 
 > 注：RingBuffer未使用，由AudeoPlayer项目迁移而来
