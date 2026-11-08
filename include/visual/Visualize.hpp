@@ -33,7 +33,7 @@ public:
         Simulated,
     };
 
-    explicit Visualize(size_t fft_size = 2048, size_t band_count = 64);
+    explicit Visualize(size_t fft_size = 2048, size_t band_count = 48);
     ~Visualize() = default;
 
     Visualize(const Visualize&) = delete;

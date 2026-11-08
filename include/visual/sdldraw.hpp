@@ -60,7 +60,7 @@ inline void drawSinRectSimulat(SDL_Renderer *renderer, int64_t tick_ms, const SD
     for (int i = 0; i < static_cast<int>((area.w + rect.w) / rect.w); ++i) {
         float curHeight = rect_height * (std::sin(rect.x + static_cast<float>(tick_ms)/1'000.f) + 1.f) / 2.f;
         rect.h = curHeight * scaleFactor(0, rect_height, lo, hi) + lo;
-        rysual::Irgba curColor = static_cast<uint32_t>((std::sin<uint32_t>(rect.x) + 1.f) / 2.f * base_color);
+        rysual::Irgba curColor = static_cast<uint32_t>((std::sin(rect.x) + 1.f) / 2.f * base_color);
         rysual::drawRectCR(renderer, &rect, curColor);
         rect.x += rect.w;
     }
