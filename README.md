@@ -20,22 +20,22 @@
 ## START
 
 ```bash
-mkdir build
-cd build
-cmake ..
-make
-./Rysual <file|[-r ]directory ...>
+cmake -S . -B build -DCMAKE_BUILD_TYPE=Release
+cmake --build build
+./build/Rysual <file|directory ...>
+./build/Rysual -r <directory>
 ```
 
+播放列表默认循环播放，只有 `Esc` 或关闭窗口才会退出。
+
 ***arg***
-- `-r`      递归检索紧跟其后的目录
+- `-r`      仅对紧跟其后的一个目录进行递归检索
 
 **KEY**
 - `Esc`     退出
 - `,/.`     进度 控制
 - `-/+`     音量 控制
 - `n/p`     切换 控制
-- `s/l`     速度 控制
 - ` `       暂停 控制
 - `1` Spectrum
 - `2` Waveform
@@ -55,6 +55,7 @@ make
     - `,/.`     进度 控制
     - `-/+`     音量 控制
     - `n/p`     切换 控制
-    - `s/l`     速度 控制
     - ` `       暂停 控制
+
+    - [ ] `s/l`     速度 控制
 
