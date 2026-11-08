@@ -44,8 +44,6 @@ public:
     void setMode(Mode mode) noexcept { m_mode = mode; }
     Mode mode() const noexcept { return m_mode; }
 
-    void setBandCount(size_t n) { m_band_count = n; }
-
     // 显示增益 只影响可视化，不改变实际音量
     void setGain(float gain) noexcept { m_gain = gain < 0.f ? 0.f : gain; }
     float gain() const noexcept { return m_gain; }

@@ -124,9 +124,11 @@ int main(int argc, char *argv[]) try
     };
 
     const auto load_track = [&](size_t index) -> bool {
+        float old_gain = player.gain();
         player.close();
         player.open(playlist.at(index));
         player.play();
+        player.setGain(old_gain);
 
         if (!visualize.configure(player.tap().sampleRate())) {
             rysual::logging::FAILED_LOG("main()", "Visualize::configure()");
